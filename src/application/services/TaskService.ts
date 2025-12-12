@@ -2,6 +2,7 @@ import { Category } from "../../domain/entities/Category.js";
 import { v4 as uuid } from "uuid";
 import type { Task } from "../../domain/entities/Task.js";
 import type { ITaskRepository } from "../../domain/repositories/ITaskRepository.js";
+import { validateCategory } from "./utils/ValidateCategoryName.js";
 
 export class TaskService {
     constructor(private TaskRepository: ITaskRepository) { }
@@ -9,6 +10,7 @@ export class TaskService {
     public async createTask(data: Omit<Task, "id" | "createAt" | "status">) {
         const title = data.title.trim();
         const exist = await this.TaskRepository.findByTitle(title);
+        validateCategory(data.category as string);
 
         if (!title) {
             throw new Error("Title is required.");
@@ -88,13 +90,12 @@ export class TaskService {
         }
 
         // === Atualizar categoria (com regras de negócio) ===
-        
-            // Assumindo que Category é um enum/objeto que contém os valores válidos
-            if (!Object.values(Category).includes(data.category as Category)) {
-                throw new Error("Invalid category.");
-            }
-            updates.category = data.category!;
-        
+
+        if (data.category !== undefined) {
+            // Usa a função centralizada
+            validateCategory(data.category as string);
+            updates.category = data.category;
+        }
 
         // === Atualizar status (com regras de negócio) ===
         if (data.status !== undefined) {
