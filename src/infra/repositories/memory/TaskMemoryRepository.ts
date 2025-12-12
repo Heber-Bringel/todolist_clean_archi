@@ -17,7 +17,7 @@ export class TaskMemoryRepository implements ITaskRepository {
     }
 
     public async findById(id: string): Promise<Task | undefined> {
-       return this.tasks.find((task: Task) => task.id === id);
+        return this.tasks.find((task: Task) => task.id === id);
     }
 
     public async findByCategory(category: Category): Promise<Task[]> {
@@ -33,7 +33,7 @@ export class TaskMemoryRepository implements ITaskRepository {
         if (index === -1) throw new Error("Task not found");
 
         const currentTask = this.tasks[index]!;
-        
+
         const updatedTask: Task = {
             ...currentTask,
             ...data,
@@ -47,7 +47,13 @@ export class TaskMemoryRepository implements ITaskRepository {
     }
 
     public async delete(id: string): Promise<void> {
-        throw new Error("Method not implemented.");
+        const initialLength = this.tasks.length;
+
+        this.tasks = this.tasks.filter((task: Task) => task.id !== id);
+
+        if (this.tasks.length === initialLength) {
+            return;
+        }
     }
 
 }
