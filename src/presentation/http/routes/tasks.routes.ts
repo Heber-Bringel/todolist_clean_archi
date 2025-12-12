@@ -1,5 +1,3 @@
-// src/presentation/http/routes/tasks.routes.ts
-
 import { Router } from 'express';
 import { TaskController } from '../controllers/TaskController.js'; // Importa o Adaptador/Controller
 
