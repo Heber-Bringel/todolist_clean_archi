@@ -1,14 +1,14 @@
-import { Category } from "../domain/entity/Category.js";
+import { Category } from "../../domain/entities/Category.js";
 import { v4 as uuid } from "uuid";
-import type { Task } from "../domain/entity/Task.js";
-import type { ITaskService } from "../domain/repositories/ITaskService.js";
+import type { Task } from "../../domain/entities/Task.js";
+import type { ITaskRepository } from "../../domain/repositories/ITaskRepository.js";
 
 export class TaskService {
-    constructor(private TaskService: ITaskService) { }
+    constructor(private TaskRepository: ITaskRepository) { }
 
     public async createTask(data: Omit<Task, "id" | "createAt" | "status">) {
         const title = data.title.trim();
-        const exist = await this.TaskService.findByTitle(title);
+        const exist = await this.TaskRepository.findByTitle(title);
 
         if (!title) {
             throw new Error("Title is required.");
@@ -27,15 +27,15 @@ export class TaskService {
             createAt: new Date()
         }
 
-        return this.TaskService.create(task);
+        return this.TaskRepository.create(task);
     }
 
     public async listAllTasks(): Promise<Task[]> {
-        return await this.TaskService.findAll();
+        return await this.TaskRepository.findAll();
     }
 
     public async listById(id: string): Promise<Task> {
-        const task = await this.TaskService.findById(id);
+        const task = await this.TaskRepository.findById(id);
         if (!task) {
             throw new Error("Task not found.");
         }
@@ -44,7 +44,7 @@ export class TaskService {
     }
 
     public async listByCategory(category: Category): Promise<Task[]> {
-        const tasks = await this.TaskService.findByCategory(category);
+        const tasks = await this.TaskRepository.findByCategory(category);
         if (!tasks) {
             throw new Error("Tasks not found.");
         }
@@ -52,7 +52,7 @@ export class TaskService {
     }
 
     public async listByTitle(title: string): Promise<Task> {
-        const taskWithTitle = await this.TaskService.findByTitle(title);
+        const taskWithTitle = await this.TaskRepository.findByTitle(title);
         if (!taskWithTitle) {
             throw new Error("Task not found.");
         }
@@ -60,47 +60,58 @@ export class TaskService {
     }
 
     public async updateTask(id: string, data: { title?: string, description?: string, category?: Category, status?: Task["status"] }): Promise<Task> {
-        const task = await this.TaskService.findById(id);
-        if (!task) throw new Error("Task not found.");
+        // 1. Busca a tarefa existente (necessário para validações de negócio)
+        const existingTask = await this.TaskRepository.findById(id);
+        if (!existingTask) throw new Error("Task not found.");
 
-        // === Atualizar título ===
+        // 2. CRIA o objeto que conterá APENAS as alterações (Partial<Task>)
+        const updates: Partial<Task> = {};
+
+        // === Atualizar título (com regras de negócio) ===
         if (data.title !== undefined) {
             const title = data.title.trim();
             if (!title) throw new Error("Title is required.");
 
-            const existing = await this.TaskService.findByTitle(title);
-            if (existing && existing.id !== id) {
+            // Validação de unicidade de título, excluindo a tarefa atual
+            const existingWithTitle = await this.TaskRepository.findByTitle(title);
+            if (existingWithTitle && existingWithTitle.id !== id) {
                 throw new Error("Title already exists.");
             }
 
-            task.title = title;
+            // Se a validação passou, adiciona a alteração ao objeto 'updates'
+            updates.title = title;
         }
 
-        // === Atualizar descrição ===
+        // === Atualizar descrição (sem regras complexas) ===
         if (data.description !== undefined) {
-            task.description = data.description;
+            updates.description = data.description;
         }
 
-        // === Atualizar categoria ===
-        if (data.category !== undefined) {
-            if (!Object.values(Category).includes(data.category)) {
+        // === Atualizar categoria (com regras de negócio) ===
+        
+            // Assumindo que Category é um enum/objeto que contém os valores válidos
+            if (!Object.values(Category).includes(data.category as Category)) {
                 throw new Error("Invalid category.");
             }
-            task.category = data.category;
-        }
+            updates.category = data.category!;
+        
 
-        // === Atualizar status ===
+        // === Atualizar status (com regras de negócio) ===
         if (data.status !== undefined) {
-            const valid = ["PENDENTE", "CONCLUIDA", "EM_ANDAMENTO"];
-            if (!valid.includes(data.status)) throw new Error("Invalid status.");
-            task.status = data.status;
+            const validStatuses = ["PENDENTE", "CONCLUIDA", "EM_ANDAMENTO"];
+            if (!validStatuses.includes(data.status)) throw new Error("Invalid status.");
+            updates.status = data.status;
         }
 
-        return await this.TaskService.update(id, task);
+        if (Object.keys(updates).length === 0) {
+            return existingTask;
+        }
+
+        return await this.TaskRepository.update(id, updates);
     }
 
     public async deleteTask(id: string): Promise<void> {
-        const task = await this.TaskService.findById(id);
+        const task = await this.TaskRepository.findById(id);
         if (!task) {
             throw new Error("Task not found.");
         }
@@ -109,6 +120,6 @@ export class TaskService {
             throw new Error("Cannot delete completed tasks.");
         }
 
-        await this.TaskService.delete(id);
+        await this.TaskRepository.delete(id);
     }
 }
