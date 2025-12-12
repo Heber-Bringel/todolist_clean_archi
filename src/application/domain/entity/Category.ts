@@ -1,6 +1,6 @@
 export enum Category {
-    TRABALHO,
-    ESTUDO,
-    SAUDE,
-    FINANCEIRO
+    TRABALHO = "TRABALHO",
+    ESTUDO = "ESTUDO",
+    SAUDE = "SAUDE",
+    FINANCEIRO = "FINANCEIRO"
 }
