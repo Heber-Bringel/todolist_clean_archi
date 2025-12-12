@@ -5,6 +5,6 @@ export type Task = {
     title: string;
     description: string;
     category: Category;
-    status: string;
-    createAt: string;
+    status: "PENDENTE" | "CONCLUIDA" | "EM_ANDAMENTO";
+    createAt: Date;
 }
