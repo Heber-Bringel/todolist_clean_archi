@@ -17,8 +17,12 @@ export class TaskController {
     }
 
     public async listAll(req: Request, res: Response): Promise<Response> {
-        const tasks = await this.taskService.listAllTasks();
-        return res.status(200).json(tasks);
+        try {
+            const tasks = await this.taskService.listAllTasks();
+            return res.status(200).json(tasks);
+        } catch (error: any) {
+            return res.status(500).json({ message: "Internal Server Error" })
+        }
     }
 
     public async listById(req: Request, res: Response) {
